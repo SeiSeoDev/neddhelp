@@ -1,75 +1,63 @@
-services:
+version : '3'
 
-  mariadb:
+services:
+  mysql:
     build:
       context: ./requirements/mariadb
-    image: mariadb
-    container_name: mariadb
+    container_name: "mysql"
     volumes:
       - volume_mariadb:/var/lib/mysql
-    restart: on-failure
     networks:
-      - inception
-    environment:
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - WP_DBNAME=${MYSQL_DATABASE}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-    
+      - inception_network
+    env_file:
+      - ./.env
+    ports:
+      - "3306:3306"
+    restart: always
 
   wordpress:
     build:
       context: ./requirements/wordpress
-    image: wordpress
-    container_name: wordpress
-    volumes:
-      - volume_wordpress:/var/www/wordpress
-    restart: on-failure
-    networks:
-      - inception
-    environment:
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - WP_ADMIN_EMAIL=${WP_ADMIN_EMAIL}
-      - WP_TITLE=${WP_TITLE}
-      - WP_URL=${WP_URL}
-      - DOMAIN_NAME=${DOMAIN_NAME}
     depends_on:
-      - mariadb
-    restart: on-failure
-  
+      - mysql
+    volumes:
+      - volume_wordpress:/var/www/html
+    networks:
+      - inception_network
+    working_dir: /var/www/html
+    ports:
+      - "9000:9000"
+    env_file:
+      - ./.env
+    restart: always
+
   nginx:
     build:
       context: ./requirements/nginx
-    image: nginx
-    container_name: nginx
     depends_on:
       - wordpress
     volumes:
-      - volume_wordpress:/var/www/wordpress
+      - volume_wordpress:/var/www/html
     networks:
-      - inception
+      - inception_network
     ports:
       - "443:443"
-    restart: on-failure
+    restart: always
 
+networks:
+  inception_network:
+    driver: bridge
 volumes:
   volume_mariadb:
     driver: local
     driver_opts:
       type: none
-      device: /home/dasanter/data/mariadb
+      device: /Users/seiseo/data/mariadb
       #allow to add an existent folder
       o: bind
-
-volume_wordpress:
-  driver: local
-  driver_opts:
-    type: none
-    device: /home/dasanter/data/wordpress
-    o: bind
-
-networks:
-    inception:
-      driver: bridge
+  volume_wordpress:
+    driver: local
+    driver_opts:
+      type: none
+      device: /Users/seiseo/data/wordpress
+      o: bind
