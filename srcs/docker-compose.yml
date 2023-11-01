@@ -10,7 +10,7 @@ services:
     networks:
       - inception_network
     env_file:
-      - ./.env
+      - .env
     ports:
       - "3306:3306"
     restart: always
@@ -28,7 +28,7 @@ services:
     ports:
       - "9000:9000"
     env_file:
-      - ./.env
+      - .env
     restart: always
 
   nginx:
