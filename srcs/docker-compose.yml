@@ -1,63 +1,81 @@
-version : '3'
-
 services:
-  mysql:
-    build:
-      context: ./requirements/mariadb
-    container_name: "mysql"
-    volumes:
-      - volume_mariadb:/var/lib/mysql
-    networks:
-      - inception_network
-    env_file:
-      - .env
-    ports:
-      - "3306:3306"
-    restart: always
-
-  wordpress:
-    build:
-      context: ./requirements/wordpress
-    depends_on:
-      - mysql
-    volumes:
-      - volume_wordpress:/var/www/html
-    networks:
-      - inception_network
-    working_dir: /var/www/html
-    ports:
-      - "9000:9000"
-    env_file:
-      - .env
-    restart: always
 
   nginx:
+    container_name: nginx
     build:
       context: ./requirements/nginx
+    image: nginx
+    ports:
+    - "443:443"
+    volumes:
+      - wp_data:/var/www/wordpress
+    restart: always
     depends_on:
       - wordpress
-    volumes:
-      - volume_wordpress:/var/www/html
     networks:
-      - inception_network
-    ports:
-      - "443:443"
+      - inception
+
+  mariadb:
+    container_name: mariadb
+    build:
+      context: ./requirements/mariadb
+      args:
+        - DATABASE_USER
+        - DATABASE_USER_PASSWORD
+        - DATABASE_NAME
+        - DATABASE_ROOT_PASSWORD
+        - DATABASE_ROOT
+    image: mariadb
+    volumes:
+      - db_data:/var/lib/mysql
     restart: always
+    networks:
+      - inception
+
+  wordpress:
+    container_name: wordpress
+    env_file:
+      - .env
+    build:
+      context: ./requirements/wordpress
+      args:
+        - DATABASE_USER
+        - DATABASE_USER_PASSWORD
+        - DATABASE_NAME
+        - DATABASE_ROOT_PASSWORD
+        - WP_ADMIN_USER
+        - WP_ADMIN_PASSWD
+        - WP_ADMIN_EMAIL
+        - WP_USER
+        - WP_USER_PASSWD
+        - WP_USER_EMAIL
+        - WP_URL
+        - WP_DB_HOST
+        - WP_TITLE
+    image: wordpress
+    volumes:
+      - wp_data:/var/www/wordpress
+    restart: always
+    depends_on:
+      - mariadb
+    networks:
+      - inception
+
+volumes:
+  db_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: /home/dasanter/data/db_data/
+  wp_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: /home/dasanter/data/wp_data/
 
 networks:
-  inception_network:
+  inception:
     driver: bridge
-volumes:
-  volume_mariadb:
-    driver: local
-    driver_opts:
-      type: none
-      device: /Users/seiseo/data/mariadb
-      #allow to add an existent folder
-      o: bind
-  volume_wordpress:
-    driver: local
-    driver_opts:
-      type: none
-      device: /Users/seiseo/data/wordpress
-      o: bind
+    name: inception

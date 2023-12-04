@@ -1,14 +1,13 @@
-FROM debian:buster
+FROM alpine:3.17
 
-RUN apt update
-RUN apt upgrade
-RUN apt install nginx -y
-RUN apt install vim -y
-RUN apt install curl -y
-RUN mkdir -p /etc/nginx/ssl
-RUN openssl req -x509 -nodes -out /etc/nginx/ssl/inception.crt -keyout /etc/nginx/ssl/inception.key -subj "/C=FR/ST=IDF/L=Paris/O=42/OU=42/CN=dasanter.42.fr/UID=dasanter"
-RUN mkdir -p /var/run/nginx
-COPY conf/nginx.conf /etc/nginx/nginx.conf
-RUN chmod 755 /var/www/html 
-RUN chown -R www-data:www-data /var/www/html    
-CMD [ "nginx", "-g", "daemon off;" ]
+RUN apk update && apk add --no-cache nginx openssl
+
+RUN openssl req -batch -x509 -sha256 -nodes -newkey rsa:2048 -days 365 \
+	-keyout /etc/ssl/private/localhost.key \
+	-out /etc/ssl/certs/localhost.crt
+
+COPY ./conf/nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 443
+
+CMD ["nginx", "-g", "daemon off;"]

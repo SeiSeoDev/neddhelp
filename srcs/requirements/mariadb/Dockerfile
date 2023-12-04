@@ -1,7 +1,19 @@
-FROM debian:buster
-RUN apt update -y
-RUN apt upgrade -y
-RUN apt-get install mariadb-server -y
-COPY conf/50-server.cnf	/etc/mysql/mariadb.conf.d/50-server.cnf
-COPY script.sh	/etc/mysql/script.sh
-RUN sh /etc/mysql/script.sh
+FROM alpine:3.17
+
+ARG DATABASE_USER
+ARG DATABASE_USER_PASSWORD
+ARG DATABASE_NAME
+ARG DATABASE_ROOT_PASSWORD
+ARG DATABASE_ROOT
+
+RUN apk update && apk add --no-cache mariadb mariadb-client
+
+COPY ./conf/my.cnf /etc/mysql/my.cnf
+
+COPY ./tools/mariadb.sh /usr/local/bin/mariadb.sh
+
+RUN chmod +x /usr/local/bin/mariadb.sh && ash -f /usr/local/bin/mariadb.sh
+
+EXPOSE 3306
+
+CMD ["mariadbd-safe"]
